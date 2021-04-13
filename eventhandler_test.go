@@ -3,9 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/keptn/go-utils/pkg/lib/v0_2_0/fake"
 	"io/ioutil"
 	"testing"
+
+	"github.com/keptn/go-utils/pkg/lib/v0_2_0/fake"
 
 	keptn "github.com/keptn/go-utils/pkg/lib/keptn"
 	keptnv2 "github.com/keptn/go-utils/pkg/lib/v0_2_0"

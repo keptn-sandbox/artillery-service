@@ -1,4 +1,4 @@
-module example.com/keptn-service-template-go
+module github.com/keptn-sandbox/artillery-service
 
 go 1.13
 
