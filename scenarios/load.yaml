@@ -1,0 +1,15 @@
+config:
+  phases:
+    - duration: 50
+      arrivalRate: 5
+      rampTo: 50
+scenarios:
+  - flow:
+      - get:
+          url: "/"
+      - get:
+          url: "/carts/1"
+      - get:
+          url: "/carts/1/items"
+      - get:
+          url: "/health"

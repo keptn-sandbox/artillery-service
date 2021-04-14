@@ -114,9 +114,9 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 	var artilleryScenario string
 
 	if data.Test.TestStrategy == "performance" {
-		artilleryScenario = "scenarios/basic.yaml"
-	} else if data.Test.TestStrategy == "functional" {
 		artilleryScenario = "scenarios/load.yaml"
+	} else if data.Test.TestStrategy == "functional" {
+		artilleryScenario = "scenarios/basic.yaml"
 	} else {
 		artilleryScenario = "scenarios/health.yaml"
 	}
@@ -153,7 +153,8 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 	// artillery run -t HOST SCENARIO_FILE
 	str, err := keptn.ExecuteCommand("artillery", []string{
 		"run",
-		"-t" + serviceURL.String(),
+		"-t",
+		serviceURL.String(),
 		artilleryScenarioResourceLocal})
 
 	log.Print(str)
