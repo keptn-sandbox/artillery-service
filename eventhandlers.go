@@ -73,7 +73,7 @@ func OldHandleConfigureMonitoringEvent(myKeptn *keptnv2.Keptn, incomingEvent clo
 func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.Event, data *keptnv2.TestTriggeredEventData) error {
 	log.Printf("Handling test.triggered Event: %s", incomingEvent.Context.GetID())
 
-	_, err := myKeptn.SendTaskFinishedEvent(&keptnv2.EventData{}, ServiceName)
+	_, err := myKeptn.SendTaskStartedEvent(&keptnv2.EventData{}, ServiceName)
 
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to send task started CloudEvent (%s), aborting...", err.Error())
