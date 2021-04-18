@@ -39,7 +39,7 @@ ENV ENV=production
 
 # Install extra packages
 # See https://github.com/gliderlabs/docker-alpine/issues/136#issuecomment-272703023
-RUN npm install -g artillery artillery-plugin-expect
+RUN npm install -g artillery artillery-plugin-expect artillery-plugin-save-stats
 
 RUN apk update && apk upgrade \
 	&& apk add ca-certificates libc6-compat \
