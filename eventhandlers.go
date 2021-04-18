@@ -27,6 +27,9 @@ func GenericLogKeptnCloudEventHandler(myKeptn *keptnv2.Keptn, incomingEvent clou
 	return nil
 }
 
+//
+// returns the service URL that is either passed via the DeploymentURI* parameters or constructs one based on keptn naming structure
+//
 func getServiceURL(data *keptnv2.TestTriggeredEventData) (*url.URL, error) {
 	if len(data.Deployment.DeploymentURIsPublic) > 0 && data.Deployment.DeploymentURIsPublic[0] != "" {
 		return url.Parse(data.Deployment.DeploymentURIsPublic[0])
@@ -133,14 +136,12 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 	// CAPTURE START TIME
 	startTime := time.Now()
 
-	// artillery run -t HOST SCENARIO_FILE
-	str, err := keptn.ExecuteCommand("artillery", []string{
-		"run",
-		"-t",
-		serviceURL.String(),
-		artilleryScenarioResourceLocal})
+	outputDestination, _ := ioutil.TempFile("", "stats")
+	defer os.Remove(outputDestination.Name())
 
-	log.Print(str)
+	err = runArtillery(artilleryScenarioResourceLocal, serviceURL.String(), outputDestination.Name())
+
+	endTime := time.Now()
 
 	if err != nil {
 		// report error
@@ -155,7 +156,23 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 		return err
 	}
 
-	endTime := time.Now()
+	artilleryRunErrors, err := getScenarioErrors(outputDestination)
+
+	if len(artilleryRunErrors) != 0 {
+		myKeptn.SendTaskFinishedEvent(&keptnv2.TestFinishedEventData{
+			Test: keptnv2.TestFinishedDetails{
+				Start: startTime.Format(time.RFC3339),
+				End:   endTime.Format(time.RFC3339),
+			},
+			EventData: keptnv2.EventData{
+				Result:  keptnv2.ResultFailed,
+				Status:  keptnv2.StatusSucceeded,
+				Message: fmt.Sprintf("Artillery test [%s] failed: %v", artilleryScenario, artilleryRunErrors),
+			},
+		}, ServiceName)
+
+		return nil
+	}
 
 	finishedEvent := &keptnv2.TestFinishedEventData{
 		Test: keptnv2.TestFinishedDetails{
