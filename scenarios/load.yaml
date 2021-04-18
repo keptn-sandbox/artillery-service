@@ -3,6 +3,8 @@ config:
     - duration: 50
       arrivalRate: 5
       rampTo: 50
+  ensure:
+    p95: 200
 scenarios:
   - flow:
       - get:
