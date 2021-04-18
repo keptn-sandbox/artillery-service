@@ -11,12 +11,12 @@ import (
 
 func getScenarioErrors(file *os.File) (map[string]float64, error) {
 	errors := make(map[string]float64)
-	d := json.NewDecoder(file)
+	decoder := json.NewDecoder(file)
 
 	for {
 		var data map[string]interface{}
 
-		if err := d.Decode(&data); err == io.EOF {
+		if err := decoder.Decode(&data); err == io.EOF {
 			break
 		} else if err != nil {
 			fmt.Println(fmt.Errorf("Error: failed to unmarshal json %s", err.Error()))
