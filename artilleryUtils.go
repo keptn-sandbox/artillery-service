@@ -36,13 +36,13 @@ func getScenarioErrors(file *os.File) (map[string]float64, error) {
 	return errors, nil
 }
 
-func runArtillery(resource string, serviceUrl string, outputDestination string) error {
+func runArtillery(resource string, serviceURL string, outputDestination string) error {
 	fmt.Println(fmt.Sprintf("Artillery output: %s", outputDestination))
 
 	args := []string{
 		"run",
 		"-t",
-		serviceUrl,
+		serviceURL,
 		"--overrides",
 		fmt.Sprintf("{\"config\": { \"plugins\": {\"save-stats\": { \"destination\": \"%s\" }}}}", outputDestination),
 		resource,
