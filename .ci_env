@@ -1,2 +1,2 @@
-DOCKER_ORGANIZATION="keptnsandbox"
-IMAGE="artillery-service"
+DOCKER_ORGANIZATION="artilleryio"
+IMAGE="keptn-artillery-service"
