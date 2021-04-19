@@ -104,6 +104,8 @@ jobs:
           go-version: ^1.13
       - name: Checkout Code
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
       - name: Load CI Environment from .ci_env
         id: load_ci_env
