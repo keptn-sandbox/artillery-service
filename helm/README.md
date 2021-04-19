@@ -11,7 +11,7 @@ The following table lists the configurable parameters of the artillery-service c
 
 | Parameter                | Description             | Default        |
 | ------------------------ | ----------------------- | -------------- |
-| `keptnservice.image.repository` | Container image name | `"docker.io/keptnsandbox/artillery-service"` |
+| `keptnservice.image.repository` | Container image name | `"docker.io/artilleryio/keptn-artillery-service"` |
 | `keptnservice.image.pullPolicy` | Kubernetes image pull policy | `"IfNotPresent"` |
 | `keptnservice.image.tag` | Container tag | `""` |
 | `keptnservice.service.enabled` | Creates a kubernetes service for the artillery-service | `true` |
