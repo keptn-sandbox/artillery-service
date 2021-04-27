@@ -10,9 +10,9 @@ Keptn service for [artillery.io](https://artillery.io/) load testing tool.
 
 ## Compatibility Matrix
 
-| Keptn Version    | [artillery-service Docker Image](https://hub.docker.com/r/artilleryio/keptn-artillery-service/tags) | Comment |
+| Keptn Version    | [artillery-service Docker Image](https://hub.docker.com/r/keptnsandbox/artillery-service/tags) | Comment |
 :----------------:|:----------------------------------------:|:----------------:|
-|       0.8.1      | artilleryio/keptn-artilleryio-service:0.1.0 | Initial release |
+|       0.8.1      | keptnsandbox/artillery-service:0.1.0 | Initial release |
 
 ## Installation
 
@@ -38,7 +38,7 @@ kubectl -n keptn get pods -l run=artillery-service
 Adapt and use the following command in case you want to up- or downgrade your installed version (specified by the `$VERSION` placeholder):
 
 ```console
-kubectl -n keptn set image deployment/artillery-service artillery-service=artilleryio/keptn-artillery-service:$VERSION --record
+kubectl -n keptn set image deployment/artillery-service artillery-service=keptnsandbox/artillery-service:$VERSION --record
 ```
 
 ### Uninstall
