@@ -1,11 +1,9 @@
 # Use the offical Golang image to create a build artifact.
 # This is based on Debian and sets the GOPATH to /go.
 # https://hub.docker.com/_/golang
-FROM golang:1.13.7-alpine as builder
+FROM golang:1.15.5 as builder
 
-RUN apk add --no-cache gcc libc-dev git
-
-WORKDIR /src/keptn-service-template-go
+WORKDIR /src/artillery-service
 
 ARG version=develop
 ENV VERSION="${version}"
@@ -32,17 +30,18 @@ COPY . .
 
 # Build the command inside the container.
 # (You may fetch or manage dependencies here, either manually or with a tool like "godep".)
-RUN GOOS=linux go build -ldflags '-linkmode=external' $BUILDFLAGS -v -o keptn-service-template-go
+RUN GOOS=linux go build -ldflags '-linkmode=external' $BUILDFLAGS -v -o artillery-service
 
 # Use a Docker multi-stage build to create a lean production image.
 # https://docs.docker.com/develop/develop-images/multistage-build/#use-multi-stage-builds
-FROM alpine:3.11
+FROM node:current-alpine
 ENV ENV=production
 
 # Install extra packages
 # See https://github.com/gliderlabs/docker-alpine/issues/136#issuecomment-272703023
+RUN npm install -g artillery artillery-plugin-expect artillery-plugin-save-stats
 
-RUN    apk update && apk upgrade \
+RUN apk update && apk upgrade \
 	&& apk add ca-certificates libc6-compat \
 	&& update-ca-certificates \
 	&& rm -rf /var/cache/apk/*
@@ -51,7 +50,7 @@ ARG version=develop
 ENV VERSION="${version}"
 
 # Copy the binary to the production image from the builder stage.
-COPY --from=builder /src/keptn-service-template-go/keptn-service-template-go /keptn-service-template-go
+COPY --from=builder /src/artillery-service/artillery-service /artillery-service
 
 EXPOSE 8080
 
@@ -64,4 +63,4 @@ ENV GOTRACEBACK=all
 #build-uncomment ENTRYPOINT ["/entrypoint.sh"]
 
 # Run the web service on container startup.
-CMD ["/keptn-service-template-go"]
+CMD ["/artillery-service"]

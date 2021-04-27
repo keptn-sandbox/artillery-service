@@ -1,0 +1,12 @@
+config:
+  phases:
+    - duration: 1
+      arrivalCount: 1
+  plugins:
+    expect: {}
+scenarios:
+  - flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: 200
