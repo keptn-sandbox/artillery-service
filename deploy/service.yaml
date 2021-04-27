@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: artillery-service
-          image: keptnsandbox/artillery-service:latest
+          image: keptnsandbox/artillery-service:0.1.0
           ports:
             - containerPort: 8080
           env:
