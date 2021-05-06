@@ -55,7 +55,7 @@ func getArtilleryConf(myKeptn *keptnv2.Keptn, project string, stage string, serv
 	}
 
 	var artilleryConf *ArtilleryConf
-	artilleryConf, err = parseArtilleryConf([]byte(keptnResourceContent))
+	artilleryConf, err = parseArtilleryConf(keptnResourceContent)
 	if err != nil {
 		logMessage := fmt.Sprintf("Couldn't parse %s file found for service %s in stage %s in project %s. Error: %s", ArtilleryConfFilename, service, stage, project, err.Error())
 		return nil, errors.New(logMessage)
