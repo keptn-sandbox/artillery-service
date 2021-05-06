@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"log"
 	"net/url"
@@ -14,10 +15,66 @@ import (
 	keptnv2 "github.com/keptn/go-utils/pkg/lib/v0_2_0"
 )
 
-/**
-* Here are all the handler functions for the individual event
-* See https://github.com/keptn/spec/blob/0.8.0-alpha/cloudevents.md for details on the payload
-**/
+// Artillery configuration file path
+const (
+	// ArtilleryConfFilename defines the path to the locust.conf.yaml
+	ArtilleryConfFilename = "scenarios/artillery.conf.yaml"
+	// DefaultArtilleryFilename defines the path to the default load.yaml
+	DefaultArtilleryFilename = "scenarios/load.yaml"
+)
+
+// ArtilleryConf Configuration file type
+type ArtilleryConf struct {
+	SpecVersion string      `json:"spec_version" yaml:"spec_version"`
+	Workloads   []*Workload `json:"workloads" yaml:"workloads"`
+}
+
+// Workload of Keptn stage
+type Workload struct {
+	TestStrategy string `json:"teststrategy" yaml:"teststrategy"`
+	Script       string `json:"script" yaml:"script"`
+}
+
+// Loads artillery.conf.yaml for the current service
+func getArtilleryConf(myKeptn *keptnv2.Keptn, project string, stage string, service string) (*ArtilleryConf, error) {
+	var err error
+
+	log.Printf("Loading %s for %s.%s.%s", ArtilleryConfFilename, project, stage, service)
+
+	keptnResourceContent, err := myKeptn.GetKeptnResource(ArtilleryConfFilename)
+
+	if err != nil {
+		logMessage := fmt.Sprintf("error when trying to load %s file for service %s on stage %s or project-level %s: %s", ArtilleryConfFilename, service, stage, project, err.Error())
+		return nil, errors.New(logMessage)
+	}
+	if len(keptnResourceContent) == 0 {
+		// if no artillery.conf.yaml file is available, this is not an error, as the service will proceed with the default workload
+		log.Printf("no %s found", ArtilleryConfFilename)
+		return nil, nil
+	}
+
+	var artilleryConf *ArtilleryConf
+	artilleryConf, err = parseArtilleryConf([]byte(keptnResourceContent))
+	if err != nil {
+		logMessage := fmt.Sprintf("Couldn't parse %s file found for service %s in stage %s in project %s. Error: %s", ArtilleryConfFilename, service, stage, project, err.Error())
+		return nil, errors.New(logMessage)
+	}
+
+	log.Printf("Successfully loaded locust.conf.yaml with %d workloads", len(artilleryConf.Workloads))
+
+	return artilleryConf, nil
+}
+
+// parses content and maps it to the ArtilleryConf struct
+func parseArtilleryConf(input []byte) (*ArtilleryConf, error) {
+	artilleryconf := &ArtilleryConf{}
+	err := yaml.Unmarshal(input, &artilleryconf)
+	if err != nil {
+		return nil, err
+	}
+
+	return artilleryconf, nil
+}
 
 // GenericLogKeptnCloudEventHandler is a generic handler for Keptn Cloud Events that logs the CloudEvent
 func GenericLogKeptnCloudEventHandler(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.Event, data interface{}) error {
@@ -97,17 +154,27 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 		}, ServiceName)
 	}
 
-	var artilleryScenario string
+	var artilleryconf *ArtilleryConf
+	artilleryconf, err = getArtilleryConf(myKeptn, myKeptn.Event.GetProject(), myKeptn.Event.GetStage(), myKeptn.Event.GetService())
 
-	if data.Test.TestStrategy == "performance" {
-		artilleryScenario = "scenarios/load.yaml"
-	} else if data.Test.TestStrategy == "functional" {
-		artilleryScenario = "scenarios/basic.yaml"
+	var artilleryFilename = ""
+
+	if artilleryconf != nil {
+		for _, workload := range artilleryconf.Workloads {
+			if workload.TestStrategy == data.Test.TestStrategy {
+				if workload.Script != "" {
+					artilleryFilename = workload.Script
+				} else {
+					artilleryFilename = ""
+				}
+			}
+		}
 	} else {
-		artilleryScenario = "scenarios/health.yaml"
+		artilleryFilename = DefaultArtilleryFilename
+		fmt.Println("No artillery.conf.yaml file provided. Continuing with default settings!")
 	}
 
-	fmt.Printf("TestStrategy=%s -> testFile=%s, serviceUrl=%s\n", data.Test.TestStrategy, artilleryScenario, serviceURL.String())
+	fmt.Printf("TestStrategy=%s -> testFile=%s, serviceUrl=%s\n", data.Test.TestStrategy, artilleryFilename, serviceURL.String())
 
 	// create a tempdir
 	tempDir, err := ioutil.TempDir("", "artillery")
@@ -116,21 +183,28 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 	}
 	defer os.RemoveAll(tempDir)
 
-	artilleryScenarioResourceLocal, err := getKeptnResource(myKeptn, artilleryScenario, tempDir)
+	var artilleryResourceFilenameLocal = ""
+	if artilleryFilename != "" {
+		artilleryResourceFilenameLocal, err = getKeptnResource(myKeptn, artilleryFilename, tempDir)
 
-	if err != nil {
-		// failed to fetch sli config file
-		errMsg := fmt.Sprintf("Failed to fetch artillery scenario %s from config repo: %s", artilleryScenario, err.Error())
-		log.Println(errMsg)
-		// send a get-sli.finished event with status=error and result=failed back to Keptn
+		// FYI you do not need to "fail" if sli.yaml is missing, you can also assume smart defaults like we do
+		// in keptn-contrib/dynatrace-service and keptn-contrib/prometheus-service
+		if err != nil {
+			// failed to fetch sli config file
+			errMsg := fmt.Sprintf("Failed to fetch artillery file %s from config repo: %s", artilleryFilename, err.Error())
+			log.Println(errMsg)
+			// send a get-sli.finished event with status=error and result=failed back to Keptn
 
-		_, err = myKeptn.SendTaskFinishedEvent(&keptnv2.EventData{
-			Status:  keptnv2.StatusErrored,
-			Result:  keptnv2.ResultFailed,
-			Message: errMsg,
-		}, ServiceName)
+			_, err = myKeptn.SendTaskFinishedEvent(&keptnv2.EventData{
+				Status:  keptnv2.StatusErrored,
+				Result:  keptnv2.ResultFailed,
+				Message: errMsg,
+			}, ServiceName)
 
-		return err
+			return err
+		}
+
+		log.Println("Successfully fetched locust test file")
 	}
 
 	// CAPTURE START TIME
@@ -139,7 +213,7 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 	outputDestination, _ := ioutil.TempFile("", "stats")
 	defer os.Remove(outputDestination.Name())
 
-	err = runArtillery(artilleryScenarioResourceLocal, serviceURL.String(), outputDestination.Name())
+	err = runArtillery(artilleryResourceFilenameLocal, serviceURL.String(), outputDestination.Name())
 
 	endTime := time.Now()
 
@@ -167,7 +241,7 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 			EventData: keptnv2.EventData{
 				Result:  keptnv2.ResultFailed,
 				Status:  keptnv2.StatusSucceeded,
-				Message: fmt.Sprintf("Artillery test [%s] failed: %v", artilleryScenario, artilleryRunErrors),
+				Message: fmt.Sprintf("Artillery test [%s] failed: %v", artilleryFilename, artilleryRunErrors),
 			},
 		}, ServiceName)
 
@@ -182,7 +256,7 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 		EventData: keptnv2.EventData{
 			Result:  keptnv2.ResultPass,
 			Status:  keptnv2.StatusSucceeded,
-			Message: fmt.Sprintf("Artillery test [%s] finished successfully", artilleryScenario),
+			Message: fmt.Sprintf("Artillery test [%s] finished successfully", artilleryFilename),
 		},
 	}
 
