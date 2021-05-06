@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2" // make sure to use v2 cloudevents here
@@ -17,7 +18,7 @@ import (
 
 // Artillery configuration file path
 const (
-	// ArtilleryConfFilename defines the path to the locust.conf.yaml
+	// ArtilleryConfFilename defines the path to the artillery.conf.yaml
 	ArtilleryConfFilename = "scenarios/artillery.conf.yaml"
 	// DefaultArtilleryFilename defines the path to the default load.yaml
 	DefaultArtilleryFilename = "scenarios/load.yaml"
@@ -60,7 +61,7 @@ func getArtilleryConf(myKeptn *keptnv2.Keptn, project string, stage string, serv
 		return nil, errors.New(logMessage)
 	}
 
-	log.Printf("Successfully loaded locust.conf.yaml with %d workloads", len(artilleryConf.Workloads))
+	log.Printf("Successfully loaded artillery.conf.yaml with %d workloads", len(artilleryConf.Workloads))
 
 	return artilleryConf, nil
 }
@@ -106,7 +107,10 @@ func getKeptnResource(myKeptn *keptnv2.Keptn, resourceName string, tempDir strin
 		return "", err
 	}
 
-	targetFileName := fmt.Sprintf("%s/%s", tempDir, "artillery-scenario.yaml")
+	// Cut away folders from the path (if there are any)
+	path := strings.Split(resourceName, "/")
+
+	targetFileName := fmt.Sprintf("%s/%s", tempDir, path[len(path)-1])
 
 	resourceFile, err := os.Create(targetFileName)
 	defer resourceFile.Close()
@@ -157,6 +161,10 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 	var artilleryconf *ArtilleryConf
 	artilleryconf, err = getArtilleryConf(myKeptn, myKeptn.Event.GetProject(), myKeptn.Event.GetStage(), myKeptn.Event.GetService())
 
+	if err != nil {
+		log.Println(err)
+	}
+
 	var artilleryFilename = ""
 
 	if artilleryconf != nil {
@@ -181,7 +189,7 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	//defer os.RemoveAll(tempDir)
 
 	var artilleryResourceFilenameLocal = ""
 	if artilleryFilename != "" {
@@ -204,7 +212,7 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 			return err
 		}
 
-		log.Println("Successfully fetched locust test file")
+		log.Println("Successfully fetched artillery test file")
 	}
 
 	// CAPTURE START TIME
@@ -213,39 +221,45 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 	outputDestination, _ := ioutil.TempFile("", "stats")
 	defer os.Remove(outputDestination.Name())
 
-	err = runArtillery(artilleryResourceFilenameLocal, serviceURL.String(), outputDestination.Name())
+	var endTime time.Time
 
-	endTime := time.Now()
+	if artilleryResourceFilenameLocal == "" {
+		log.Println("No test file provided for stage -> Skipping tests")
+	} else {
+		err = runArtillery(artilleryResourceFilenameLocal, serviceURL.String(), outputDestination.Name())
 
-	if err != nil {
-		// report error
-		log.Print(err)
-		// send out a test.finished failed CloudEvent
-		_, err = myKeptn.SendTaskFinishedEvent(&keptnv2.EventData{
-			Status:  keptnv2.StatusErrored,
-			Result:  keptnv2.ResultFailed,
-			Message: err.Error(),
-		}, ServiceName)
+		endTime = time.Now()
 
-		return err
-	}
-
-	artilleryRunErrors, err := getScenarioErrors(outputDestination)
-
-	if len(artilleryRunErrors) != 0 {
-		myKeptn.SendTaskFinishedEvent(&keptnv2.TestFinishedEventData{
-			Test: keptnv2.TestFinishedDetails{
-				Start: startTime.Format(time.RFC3339),
-				End:   endTime.Format(time.RFC3339),
-			},
-			EventData: keptnv2.EventData{
+		if err != nil {
+			// report error
+			log.Print(err)
+			// send out a test.finished failed CloudEvent
+			_, err = myKeptn.SendTaskFinishedEvent(&keptnv2.EventData{
+				Status:  keptnv2.StatusErrored,
 				Result:  keptnv2.ResultFailed,
-				Status:  keptnv2.StatusSucceeded,
-				Message: fmt.Sprintf("Artillery test [%s] failed: %v", artilleryFilename, artilleryRunErrors),
-			},
-		}, ServiceName)
+				Message: err.Error(),
+			}, ServiceName)
 
-		return nil
+			return err
+		}
+
+		artilleryRunErrors, _ := getScenarioErrors(outputDestination)
+
+		if len(artilleryRunErrors) != 0 {
+			myKeptn.SendTaskFinishedEvent(&keptnv2.TestFinishedEventData{
+				Test: keptnv2.TestFinishedDetails{
+					Start: startTime.Format(time.RFC3339),
+					End:   endTime.Format(time.RFC3339),
+				},
+				EventData: keptnv2.EventData{
+					Result:  keptnv2.ResultFailed,
+					Status:  keptnv2.StatusSucceeded,
+					Message: fmt.Sprintf("Artillery test [%s] failed: %v", artilleryFilename, artilleryRunErrors),
+				},
+			}, ServiceName)
+
+			return nil
+		}
 	}
 
 	finishedEvent := &keptnv2.TestFinishedEventData{

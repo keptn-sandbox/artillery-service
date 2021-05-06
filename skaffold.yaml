@@ -2,7 +2,7 @@ apiVersion: skaffold/v1beta13
 kind: Config
 build:
   artifacts:
-    - image: keptnsandbox/artillery-service:latest
+    - image: keptnsandbox/artillery-service
       docker:
         dockerfile: Dockerfile
         buildArgs:
