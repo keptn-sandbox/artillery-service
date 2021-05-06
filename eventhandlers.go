@@ -103,7 +103,7 @@ func getKeptnResource(myKeptn *keptnv2.Keptn, resourceName string, tempDir strin
 	requestedResourceContent, err := myKeptn.GetKeptnResource(resourceName)
 
 	if err != nil {
-		fmt.Printf("Failed to fetch file: %s\n", err.Error())
+		log.Printf("Failed to fetch file: %s\n", err.Error())
 		return "", err
 	}
 
@@ -118,7 +118,7 @@ func getKeptnResource(myKeptn *keptnv2.Keptn, resourceName string, tempDir strin
 	_, err = resourceFile.Write([]byte(requestedResourceContent))
 
 	if err != nil {
-		fmt.Printf("Failed to create tempfile: %s\n", err.Error())
+		log.Printf("Failed to create tempfile: %s\n", err.Error())
 		return "", err
 	}
 
@@ -179,17 +179,17 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 		}
 	} else {
 		artilleryFilename = DefaultArtilleryFilename
-		fmt.Println("No artillery.conf.yaml file provided. Continuing with default settings!")
+		log.Println("No artillery.conf.yaml file provided. Continuing with default settings!")
 	}
 
-	fmt.Printf("TestStrategy=%s -> testFile=%s, serviceUrl=%s\n", data.Test.TestStrategy, artilleryFilename, serviceURL.String())
+	log.Printf("TestStrategy=%s -> testFile=%s, serviceUrl=%s\n", data.Test.TestStrategy, artilleryFilename, serviceURL.String())
 
 	// create a tempdir
 	tempDir, err := ioutil.TempDir("", "artillery")
 	if err != nil {
 		log.Fatal(err)
 	}
-	//defer os.RemoveAll(tempDir)
+	defer os.RemoveAll(tempDir)
 
 	var artilleryResourceFilenameLocal = ""
 	if artilleryFilename != "" {

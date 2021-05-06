@@ -51,15 +51,27 @@ kubectl delete -f deploy/service.yaml
 
 ## Usage
 
-Running the script `run.sh` will deploy the service to the Keptn Kubernetes cluster and add the resources used by the following test strategies:
+After deploying the `artillery-service` to your Keptn cluster, you can configure your test strategies by adding an `artillery.conf.yaml` file, allowing for more complex configurations like multiple test files for different stages.
 
-| Test Strategy    | Scenario |
-:----------------:|:-----------:|
-|       performance      | scenarios/load.yaml |
-|       functional      | scenarios/basic.yaml |
-|       healthcheck      | scenarios/health.yaml |
+```
+---
+spec_version: '0.1.0'
+workloads:
+  - teststrategy: functional
+    script: scenarios/basic.yaml
+  - teststrategy: performance_light
+    script: scenarios/load.yaml
+  - teststrategy: functional-light
+    script: scenarios/health.yaml
+```
 
-You can update the scenarios and add them to Keptn using:
+The configuration file can be added to the repo using the `keptn add-resource` command:
+
+```
+keptn add-resource --project=PROJECTNAME --service=SERVICENAME --stage=STAGENAME --resource=artillery.conf.yaml --resourceUri=scenarios/artillery.conf.yaml
+```
+
+If no `artillery.conf.yaml` file is provided the service will try to execute the default scenario `scenarios/load.yaml`. You can add and update the scenarios and add them to Keptn using:
 
 ```console
 keptn add-resource --project=PROJECTNAME --service=SERVICENAME --stage=STAGENAME --resource=./scenarios/basic.yaml --resourceUri=scenarios/basic.yaml
