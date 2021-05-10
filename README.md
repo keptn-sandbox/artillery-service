@@ -68,7 +68,7 @@ workloads:
 The configuration file can be added to the repo using the `keptn add-resource` command:
 
 ```
-keptn add-resource --project=PROJECTNAME --service=SERVICENAME --stage=STAGENAME --resource=artillery.conf.yaml --resourceUri=scenarios/artillery.conf.yaml
+keptn add-resource --project=PROJECTNAME --service=SERVICENAME --all-stages --resource=artillery.conf.yaml --resourceUri=scenarios/artillery.conf.yaml
 ```
 
 If no `artillery.conf.yaml` file is provided the service will try to execute the default scenario `scenarios/load.yaml`. You can add and update the scenarios and add them to Keptn using:
