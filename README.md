@@ -12,7 +12,8 @@ Keptn service for [artillery.io](https://artillery.io/) load testing tool.
 
 | Keptn Version    | [artillery-service Docker Image](https://hub.docker.com/r/keptnsandbox/artillery-service/tags) | Comment |
 :----------------:|:----------------------------------------:|:----------------:|
-|       0.8.1      | keptnsandbox/artillery-service:0.1.0 | Initial release |
+|       0.8.1      | keptnsandbox/artillery-service:0.1.0 | initial release |
+|       0.8.2      | keptnsandbox/artillery-service:0.2.0 | |
 
 ## Installation
 
