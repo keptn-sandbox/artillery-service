@@ -17,14 +17,14 @@ spec:
     spec:
       containers:
         - name: artillery-service
-          image: keptnsandbox/artillery-service:0.1.0
+          image: keptnsandbox/artillery-service:0.2.0
           ports:
             - containerPort: 8080
           env:
             - name: CONFIGURATION_SERVICE
               value: 'http://configuration-service:8080'
         - name: distributor
-          image: keptn/distributor:0.8.1
+          image: keptn/distributor:0.8.2
           livenessProbe:
             httpGet:
               path: /health
