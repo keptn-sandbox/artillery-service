@@ -14,6 +14,7 @@ Keptn service for [artillery.io](https://artillery.io/) load testing tool.
 :----------------:|:----------------------------------------:|:----------------:|
 |       0.8.1      | keptnsandbox/artillery-service:0.1.0 | initial release |
 |       0.8.2      | keptnsandbox/artillery-service:0.2.0 | |
+|       0.8.3      | keptnsandbox/artillery-service:0.3.0 | |
 
 ## Installation
 
