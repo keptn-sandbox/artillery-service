@@ -3,13 +3,14 @@ package main
 import (
 	"errors"
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
 	"strings"
 	"time"
+
+	"gopkg.in/yaml.v3"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2" // make sure to use v2 cloudevents here
 	keptn "github.com/keptn/go-utils/pkg/lib"
@@ -226,9 +227,12 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 	if artilleryResourceFilenameLocal == "" {
 		log.Println("No test file provided for stage -> Skipping tests")
 	} else {
-		err = runArtillery(artilleryResourceFilenameLocal, serviceURL.String(), outputDestination.Name())
+		output, err := runArtillery(artilleryResourceFilenameLocal, serviceURL.String(), outputDestination.Name())
 
 		endTime = time.Now()
+
+		log.Println("Finished running artillery tests")
+		log.Println(output)
 
 		if err != nil {
 			// report error
