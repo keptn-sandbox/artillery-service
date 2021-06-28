@@ -36,9 +36,7 @@ func getScenarioErrors(file *os.File) (map[string]float64, error) {
 	return errors, nil
 }
 
-func runArtillery(resource string, serviceURL string, outputDestination string) error {
-	fmt.Println(fmt.Sprintf("Artillery output: %s", outputDestination))
-
+func runArtillery(resource string, serviceURL string, outputDestination string) (string, error) {
 	args := []string{
 		"run",
 		"-t",
@@ -48,8 +46,5 @@ func runArtillery(resource string, serviceURL string, outputDestination string) 
 		resource,
 	}
 
-	// artillery run -t HOST SCENARIO_FILE
-	_, err := keptn.ExecuteCommand("artillery", args)
-
-	return err
+	return keptn.ExecuteCommand("artillery", args)
 }
